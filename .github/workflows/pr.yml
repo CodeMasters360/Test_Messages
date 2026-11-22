@@ -10,4 +10,5 @@ permissions:
 
 jobs:
     call-pr-workflow:
+        if: github.repository_owner == 'FossifyOrg'
         uses: FossifyOrg/.github/.github/workflows/pr.yml@main

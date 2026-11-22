@@ -77,7 +77,11 @@ import org.fossify.messages.models.Message
 import org.fossify.messages.models.MessageAttachment
 import org.fossify.messages.models.NamePhoto
 import org.fossify.messages.models.RecycleBinMessage
+<<<<<<< HEAD
 import org.fossify.messages.models.SpamMessage
+=======
+import org.fossify.messages.models.SpamConversation
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
 import org.xmlpull.v1.XmlPullParserException
 import java.io.FileNotFoundException
 import kotlin.time.Duration.Companion.minutes
@@ -142,14 +146,23 @@ fun Context.getMessages(
 
     val blockStatus = HashMap<String, Boolean>()
     val blockedNumbers = getBlockedNumbers()
+<<<<<<< HEAD
     // With the Spam folder, received spam never reaches the conversations, so nothing has to
     // be hidden. This also keeps the messages the user sends to a blocked number visible.
     val hideBlockedSenders = !config.moveBlockedToSpam
+=======
+    // blocked senders are hidden everywhere, except inside the Spam folder
+    val isSpamThread = isConversationSpam(threadId)
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
     var messages = ArrayList<Message>()
     queryCursor(uri, projection, selection, selectionArgs, sortOrder, showErrors = true) { cursor ->
         val senderNumber = cursor.getStringValue(Sms.ADDRESS) ?: return@queryCursor
         val isNumberBlocked = blockStatus.getOrPut(senderNumber) { isNumberBlocked(senderNumber, blockedNumbers) }
+<<<<<<< HEAD
         if (isNumberBlocked && hideBlockedSenders) {
+=======
+        if (isNumberBlocked && !isSpamThread) {
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
             return@queryCursor
         }
 
@@ -387,8 +400,17 @@ fun Context.getConversations(
     val conversations = ArrayList<Conversation>()
     val simpleContactHelper = SimpleContactsHelper(this)
     val blockedNumbers = getBlockedNumbers()
+<<<<<<< HEAD
     // see getMessages(): with the Spam folder the conversations of blocked senders aren't hidden
     val hideBlockedSenders = !config.moveBlockedToSpam
+=======
+    // conversations of blocked senders are hidden, except the ones kept in the Spam folder
+    val spamThreadIds = try {
+        conversationsDB.getAllSpamThreadIds().toSet()
+    } catch (_: Exception) {
+        emptySet()
+    }
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
     val unreadMap = getUnreadCountsByThread()
     try {
         queryCursorUnsafe(
@@ -419,7 +441,11 @@ fun Context.getConversations(
             val recipientIds =
                 rawIds.split(" ").filter { it.areDigitsOnly() }.map { it.toInt() }.toMutableList()
             val phoneNumbers = getThreadPhoneNumbers(recipientIds)
+<<<<<<< HEAD
             if (phoneNumbers.isEmpty() || (hideBlockedSenders && phoneNumbers.any {
+=======
+            if (phoneNumbers.isEmpty() || (id !in spamThreadIds && phoneNumbers.any {
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
                     isNumberBlocked(
                         it,
                         blockedNumbers
@@ -1477,6 +1503,53 @@ fun Context.getDefaultKeyboardHeight(): Int {
 
 fun Context.shouldUnarchive(): Boolean {
     return config.isArchiveAvailable && !config.keepConversationsArchived
+}
+
+/**
+ * Moves the conversation to the Spam folder. Spam conversations are hidden from the main
+ * list and the archive, and they never show a notification.
+ */
+fun Context.markConversationAsSpam(threadId: Long) {
+    try {
+        conversationsDB.insertSpamEntry(
+            SpamConversation(threadId = threadId, markedTS = System.currentTimeMillis())
+        )
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+/**
+ * Takes the conversation out of the Spam folder ("Not spam").
+ */
+fun Context.unmarkConversationAsSpam(threadId: Long) {
+    try {
+        conversationsDB.deleteSpamEntry(threadId)
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+fun Context.isConversationSpam(threadId: Long): Boolean {
+    return try {
+        conversationsDB.isThreadSpam(threadId)
+    } catch (_: Exception) {
+        false
+    }
+}
+
+fun Context.removeAllSpamConversations(callback: (() -> Unit)? = null) {
+    ensureBackgroundThread {
+        try {
+            for (conversation in conversationsDB.getAllSpam()) {
+                deleteConversation(conversation.threadId)
+            }
+            toast(R.string.spam_emptied_successfully)
+            callback?.invoke()
+        } catch (_: Exception) {
+            toast(org.fossify.commons.R.string.unknown_error_occurred)
+        }
+    }
 }
 
 fun Context.copyToUri(src: Uri, dst: Uri) {

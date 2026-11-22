@@ -14,14 +14,13 @@ import org.fossify.messages.interfaces.ConversationsDao
 import org.fossify.messages.interfaces.DraftsDao
 import org.fossify.messages.interfaces.MessageAttachmentsDao
 import org.fossify.messages.interfaces.MessagesDao
-import org.fossify.messages.interfaces.SpamMessagesDao
 import org.fossify.messages.models.Attachment
 import org.fossify.messages.models.Conversation
 import org.fossify.messages.models.Draft
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.MessageAttachment
 import org.fossify.messages.models.RecycleBinMessage
-import org.fossify.messages.models.SpamMessage
+import org.fossify.messages.models.SpamConversation
 
 @Database(
     entities = [
@@ -31,7 +30,7 @@ import org.fossify.messages.models.SpamMessage
         Message::class,
         RecycleBinMessage::class,
         Draft::class,
-        SpamMessage::class
+        SpamConversation::class
     ],
     version = 13
 )
@@ -47,8 +46,6 @@ abstract class MessagesDatabase : RoomDatabase() {
     abstract fun MessagesDao(): MessagesDao
 
     abstract fun DraftsDao(): DraftsDao
-
-    abstract fun SpamMessagesDao(): SpamMessagesDao
 
     companion object {
         private var db: MessagesDatabase? = null
@@ -193,6 +190,7 @@ abstract class MessagesDatabase : RoomDatabase() {
                     execSQL(
                         "CREATE UNIQUE INDEX IF NOT EXISTS `index_spam_conversations_thread_id` " +
                             "ON `spam_conversations` (`thread_id`)"
+<<<<<<< HEAD
                     )
                 }
             }
@@ -210,6 +208,8 @@ abstract class MessagesDatabase : RoomDatabase() {
                             "`sender_name` TEXT NOT NULL, `body` TEXT NOT NULL, " +
                             "`date` INTEGER NOT NULL, `subscription_id` INTEGER NOT NULL, " +
                             "`is_mms` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+=======
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
                     )
                 }
             }

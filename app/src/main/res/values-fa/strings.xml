@@ -118,11 +118,18 @@
     <string name="show_spam_conversations">نمایش هرزنامه‌ها</string>
     <string name="no_spam_conversations">هیچ پیام هرزنامه‌ای وجود ندارد</string>
     <string name="empty_spam">حذف همه‌ی هرزنامه‌ها</string>
+<<<<<<< HEAD
     <string name="empty_spam_confirmation">پوشه‌ی هرزنامه خالی شود؟ همه‌ی پیام‌های هرزنامه برای همیشه حذف می‌شوند.</string>
     <string name="spam_emptied_successfully">پوشه‌ی هرزنامه با موفقیت خالی شد</string>
     <string name="not_spam">هرزنامه نیست</string>
     <string name="not_spam_still_blocked">پیام بازگردانی شد. فرستنده یا عبارتی در آن هنوز مسدود است، بنابراین پیام‌های مشابه جدید همچنان به هرزنامه می‌روند.</string>
     <string name="spam_mms_placeholder">پیام چندرسانه‌ای (MMS)</string>
+=======
+    <string name="empty_spam_confirmation">پوشه‌ی هرزنامه خالی شود؟ همه‌ی گفت‌و‌گوهای هرزنامه برای همیشه حذف می‌شوند.</string>
+    <string name="spam_emptied_successfully">پوشه‌ی هرزنامه با موفقیت خالی شد</string>
+    <string name="not_spam">هرزنامه نیست</string>
+    <string name="not_spam_still_blocked">فرستنده هنوز در فهرست شماره‌های مسدود است. برای دریافت پیام‌هایش در صندوق ورودی، آن را از آن فهرست حذف کنید؛ در غیر این صورت پیام‌ها به هرزنامه می‌روند.</string>
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
     <string name="move_blocked_to_spam">انتقال پیام‌های مسدودشده به هرزنامه به‌جای حذف</string>
     <string name="send_group_message">قالب پیام گروهی</string>
     <string name="group_mms">فراپیام گروهی</string>

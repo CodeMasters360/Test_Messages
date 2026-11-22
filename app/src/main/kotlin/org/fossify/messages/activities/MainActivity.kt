@@ -301,10 +301,18 @@ class MainActivity : SimpleActivity() {
                 listOf()
             }
 
+            // spam conversations aren't displayed here, but they still have to take part
+            // in the sync with the telephony provider (e.g. to drop deleted threads)
+            val spam = try {
+                conversationsDB.getAllSpam()
+            } catch (_: Exception) {
+                listOf()
+            }
+
             runOnUiThread {
                 setupConversations(conversations, cached = true)
                 getNewConversations(
-                    (conversations + archived).toMutableList() as ArrayList<Conversation>
+                    (conversations + archived + spam).toMutableList() as ArrayList<Conversation>
                 )
             }
             conversations.forEach {

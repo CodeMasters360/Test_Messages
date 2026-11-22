@@ -73,11 +73,18 @@
     <string name="show_spam_conversations">Show spam</string>
     <string name="no_spam_conversations">No spam messages have been found</string>
     <string name="empty_spam">Delete all spam</string>
+<<<<<<< HEAD
     <string name="empty_spam_confirmation">Are you sure you want to empty the Spam folder? All spam messages will be permanently lost.</string>
     <string name="spam_emptied_successfully">The Spam folder has been emptied successfully</string>
     <string name="not_spam">Not spam</string>
     <string name="not_spam_still_blocked">Message restored. Its sender or a phrase in it is still blocked, so similar new messages will keep going to Spam.</string>
     <string name="spam_mms_placeholder">Multimedia message (MMS)</string>
+=======
+    <string name="empty_spam_confirmation">Are you sure you want to empty the Spam folder? All spam conversations will be permanently lost.</string>
+    <string name="spam_emptied_successfully">The Spam folder has been emptied successfully</string>
+    <string name="not_spam">Not spam</string>
+    <string name="not_spam_still_blocked">The sender is still in the blocked numbers list. Remove it from there to get its messages in the inbox, otherwise they will keep going to Spam.</string>
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
     <string name="move_blocked_to_spam">Move blocked messages to Spam instead of discarding them</string>
     <!-- Recycle bin -->
     <string name="restore">Restore</string>

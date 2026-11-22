@@ -1,12 +1,19 @@
 package org.fossify.messages.activities
 
 import android.annotation.SuppressLint
+<<<<<<< HEAD
+=======
+import android.content.Intent
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
 import android.os.Bundle
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.extensions.areSystemAnimationsEnabled
 import org.fossify.commons.extensions.beGoneIf
 import org.fossify.commons.extensions.beVisibleIf
+<<<<<<< HEAD
 import org.fossify.commons.extensions.formatDate
+=======
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
 import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.hideKeyboard
@@ -16,12 +23,22 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
 import org.fossify.messages.adapters.SpamConversationsAdapter
 import org.fossify.messages.databinding.ActivitySpamConversationsBinding
+<<<<<<< HEAD
 import org.fossify.messages.extensions.removeAllSpamMessages
 import org.fossify.messages.extensions.restoreSpamMessage
 import org.fossify.messages.extensions.spamMessagesDB
 import org.fossify.messages.models.Conversation
 import org.fossify.messages.models.Events
 import org.fossify.messages.models.SpamMessage
+=======
+import org.fossify.messages.extensions.config
+import org.fossify.messages.extensions.conversationsDB
+import org.fossify.messages.extensions.removeAllSpamConversations
+import org.fossify.messages.helpers.THREAD_ID
+import org.fossify.messages.helpers.THREAD_TITLE
+import org.fossify.messages.models.Conversation
+import org.fossify.messages.models.Events
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -42,13 +59,21 @@ class SpamConversationsActivity : SimpleActivity() {
             topAppBar = binding.spamAppbar
         )
 
+<<<<<<< HEAD
         loadSpamMessages()
+=======
+        loadSpamConversations()
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
     }
 
     override fun onResume() {
         super.onResume()
         setupTopAppBar(binding.spamAppbar, NavigationIcon.Arrow)
+<<<<<<< HEAD
         loadSpamMessages()
+=======
+        loadSpamConversations()
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
     }
 
     override fun onDestroy() {
@@ -73,10 +98,17 @@ class SpamConversationsActivity : SimpleActivity() {
         }
     }
 
+<<<<<<< HEAD
     private fun loadSpamMessages() {
         ensureBackgroundThread {
             val conversations = try {
                 ArrayList(spamMessagesDB.getAll().map { it.toConversation() })
+=======
+    private fun loadSpamConversations() {
+        ensureBackgroundThread {
+            val conversations = try {
+                conversationsDB.getAllSpam().toMutableList() as ArrayList<Conversation>
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
             } catch (e: Exception) {
                 ArrayList()
             }
@@ -101,8 +133,13 @@ class SpamConversationsActivity : SimpleActivity() {
             positive = org.fossify.commons.R.string.yes,
             negative = org.fossify.commons.R.string.no
         ) {
+<<<<<<< HEAD
             removeAllSpamMessages {
                 loadSpamMessages()
+=======
+            removeAllSpamConversations {
+                loadSpamConversations()
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
             }
         }
     }
@@ -115,7 +152,11 @@ class SpamConversationsActivity : SimpleActivity() {
                 activity = this,
                 recyclerView = binding.conversationsList,
                 onRefresh = { notifyDatasetChanged() },
+<<<<<<< HEAD
                 itemClick = { handleSpamMessageClick(it) }
+=======
+                itemClick = { handleConversationClick(it) }
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
             )
 
             binding.conversationsList.adapter = currAdapter
@@ -127,13 +168,25 @@ class SpamConversationsActivity : SimpleActivity() {
     }
 
     private fun setupConversations(conversations: ArrayList<Conversation>) {
+<<<<<<< HEAD
         // already sorted from the newest to the oldest message by the database query
+=======
+        val sortedConversations = conversations.sortedWith(
+            compareByDescending<Conversation> { config.pinnedConversations.contains(it.threadId.toString()) }
+                .thenByDescending { it.date }
+        ).toMutableList() as ArrayList<Conversation>
+
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
         showOrHidePlaceholder(conversations.isEmpty())
         updateOptionsMenu(conversations)
 
         try {
             getOrCreateConversationsAdapter().apply {
+<<<<<<< HEAD
                 updateConversations(conversations)
+=======
+                updateConversations(sortedConversations)
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
             }
         } catch (ignored: Exception) {
         }
@@ -151,6 +204,7 @@ class SpamConversationsActivity : SimpleActivity() {
         getOrCreateConversationsAdapter().notifyDataSetChanged()
     }
 
+<<<<<<< HEAD
     // every spam message is shown as an item of its own, the id of the message is used as threadId
     private fun SpamMessage.toConversation() = Conversation(
         threadId = id,
@@ -195,11 +249,23 @@ class SpamConversationsActivity : SimpleActivity() {
                 spamMessagesDB.delete(spamMessage.id)
                 org.fossify.messages.helpers.refreshConversations()
             }
+=======
+    private fun handleConversationClick(any: Any) {
+        Intent(this, ThreadActivity::class.java).apply {
+            val conversation = any as Conversation
+            putExtra(THREAD_ID, conversation.threadId)
+            putExtra(THREAD_TITLE, conversation.title)
+            startActivity(this)
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
         }
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun refreshConversations(@Suppress("unused") event: Events.RefreshConversations) {
+<<<<<<< HEAD
         loadSpamMessages()
+=======
+        loadSpamConversations()
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
     }
 }

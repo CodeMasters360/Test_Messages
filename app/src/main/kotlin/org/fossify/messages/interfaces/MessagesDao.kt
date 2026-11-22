@@ -53,7 +53,7 @@ interface MessagesDao {
     @Query("SELECT COUNT(*) FROM recycle_bin_messages")
     fun getArchivedCount(): Int
 
-    @Query("SELECT * FROM messages WHERE body LIKE :text")
+    @Query("SELECT * FROM messages WHERE body LIKE :text AND thread_id NOT IN (SELECT spam_conversations.thread_id FROM spam_conversations)")
     fun getMessagesWithText(text: String): List<Message>
 
     @Query("UPDATE messages SET read = 1 WHERE id = :id")

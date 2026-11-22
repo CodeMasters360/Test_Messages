@@ -6,7 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+<<<<<<< HEAD
 - Added a Spam folder: received messages detected as spam (blocked numbers, blocked keywords, unknown numbers) are now kept there as separate messages, newest first and with their sender, silently and without a notification, instead of being discarded. Only the message is moved, not the whole conversation, and messages you send are never treated as spam
+=======
+- Added a Spam folder: messages detected as spam (blocked numbers, blocked keywords, unknown numbers) are now kept there silently, without a notification, instead of being discarded
+>>>>>>> 9c2f92fd66cf484dd365f7c933cdd2e1c76d5e89
 - Added an option to turn the Spam folder off and discard blocked messages like before
 - Character based sender names (e.g. `Google`) can be blocked case-insensitively, `*` works as a wildcard (e.g. `AD-*`)
 

@@ -147,11 +147,14 @@ import org.fossify.messages.extensions.renameConversation
 import org.fossify.messages.extensions.restoreAllMessagesFromRecycleBinForConversation
 import org.fossify.messages.extensions.restoreMessageFromRecycleBin
 import org.fossify.messages.extensions.saveSmsDraft
+import org.fossify.messages.extensions.isConversationSpam
+import org.fossify.messages.extensions.markConversationAsSpam
 import org.fossify.messages.extensions.shouldUnarchive
 import org.fossify.messages.extensions.showWithAnimation
 import org.fossify.messages.extensions.subscriptionManagerCompat
 import org.fossify.messages.extensions.toArrayList
 import org.fossify.messages.extensions.toSortedMessages
+import org.fossify.messages.extensions.unmarkConversationAsSpam
 import org.fossify.messages.extensions.updateConversationArchivedStatus
 import org.fossify.messages.extensions.updateLastConversationMessage
 import org.fossify.messages.extensions.updateScheduledMessagesThreadId
@@ -1167,6 +1170,10 @@ class ThreadActivity : SimpleActivity() {
                 numbers.forEach {
                     addBlockedNumber(it)
                 }
+                if (config.moveBlockedToSpam) {
+                    // a blocked conversation is kept in the Spam folder instead of the inbox
+                    markConversationAsSpam(threadId)
+                }
                 refreshConversations()
                 finish()
             }
@@ -1722,6 +1729,11 @@ class ThreadActivity : SimpleActivity() {
             }
         }
         messagesDB.insertOrUpdate(message)
+        if (isConversationSpam(message.threadId)) {
+            // replying to a conversation takes it out of the Spam folder
+            unmarkConversationAsSpam(message.threadId)
+            refreshConversations()
+        }
         if (shouldUnarchive()) {
             updateConversationArchivedStatus(message.threadId, false)
             refreshConversations()
