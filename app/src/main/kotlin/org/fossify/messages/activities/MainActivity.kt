@@ -55,7 +55,6 @@ import org.fossify.messages.adapters.ConversationsAdapter
 import org.fossify.messages.adapters.SearchResultsAdapter
 import org.fossify.messages.databinding.ActivityMainBinding
 import org.fossify.messages.extensions.checkAndDeleteOldRecycleBinMessages
-import org.fossify.messages.extensions.deleteOldSpamMessages
 import org.fossify.messages.extensions.clearAllMessagesIfNeeded
 import org.fossify.messages.extensions.clearExpiredScheduledMessages
 import org.fossify.messages.extensions.config
@@ -98,7 +97,6 @@ class MainActivity : SimpleActivity() {
         setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.conversationsList))
 
         checkAndDeleteOldRecycleBinMessages()
-        ensureBackgroundThread { deleteOldSpamMessages() }
         clearAllMessagesIfNeeded {
             loadMessages()
         }
@@ -180,8 +178,8 @@ class MainActivity : SimpleActivity() {
         binding.mainMenu.requireToolbar().setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.show_recycle_bin -> launchRecycleBin()
-                R.id.show_spam -> launchSpam()
                 R.id.show_archived -> launchArchivedConversations()
+                R.id.show_spam -> launchSpamConversations()
                 R.id.settings -> launchSettings()
                 R.id.about -> launchAbout()
                 else -> return@setOnMenuItemClickListener false
@@ -619,14 +617,14 @@ class MainActivity : SimpleActivity() {
         startActivity(Intent(applicationContext, RecycleBinConversationsActivity::class.java))
     }
 
-    private fun launchSpam() {
-        hideKeyboard()
-        startActivity(Intent(applicationContext, SpamActivity::class.java))
-    }
-
     private fun launchArchivedConversations() {
         hideKeyboard()
         startActivity(Intent(applicationContext, ArchivedConversationsActivity::class.java))
+    }
+
+    private fun launchSpamConversations() {
+        hideKeyboard()
+        startActivity(Intent(applicationContext, SpamConversationsActivity::class.java))
     }
 
     private fun launchSettings() {

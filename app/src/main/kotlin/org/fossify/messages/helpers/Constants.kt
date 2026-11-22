@@ -48,6 +48,7 @@ const val IS_ARCHIVE_AVAILABLE = "is_archive_available"
 const val CUSTOM_NOTIFICATIONS = "custom_notifications"
 const val IS_LAUNCHED_FROM_SHORTCUT = "is_launched_from_shortcut"
 const val KEEP_CONVERSATIONS_ARCHIVED = "keep_conversations_archived"
+const val MOVE_BLOCKED_TO_SPAM = "move_blocked_to_spam"
 
 private const val PATH = "org.fossify.org.fossify.messages.action."
 const val MARK_AS_READ = PATH + "mark_as_read"
@@ -120,9 +121,3 @@ fun generateStableId(type: Int, key: Long): Long {
     require(type in 0 until (1 shl THREAD_TYPE_BITS))
     return (type.toLong() shl THREAD_TYPE_SHIFT) or (key and THREAD_KEY_MASK)
 }
-
-// spam folder
-const val SPAM_REASON_BLOCKED_NUMBER = 0
-const val SPAM_REASON_BLOCKED_KEYWORD = 1
-const val SPAM_REASON_UNKNOWN_SENDER = 2
-const val SPAM_RETENTION_MS = 30L * 24L * 60L * 60L * 1000L

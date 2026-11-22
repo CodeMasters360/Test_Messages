@@ -103,6 +103,7 @@ class SettingsActivity : SimpleActivity() {
         setupLanguage()
         setupManageBlockedNumbers()
         setupManageBlockedKeywords()
+        setupMoveBlockedToSpam()
         setupChangeDateTimeFormat()
         setupFontSize()
         setupShowCharacterCounter()
@@ -216,6 +217,14 @@ class SettingsActivity : SimpleActivity() {
             Intent(this@SettingsActivity, ManageBlockedKeywordsActivity::class.java).apply {
                 startActivity(this)
             }
+        }
+    }
+
+    private fun setupMoveBlockedToSpam() = binding.apply {
+        settingsMoveBlockedToSpam.isChecked = config.moveBlockedToSpam
+        settingsMoveBlockedToSpamHolder.setOnClickListener {
+            settingsMoveBlockedToSpam.toggle()
+            config.moveBlockedToSpam = settingsMoveBlockedToSpam.isChecked
         }
     }
 

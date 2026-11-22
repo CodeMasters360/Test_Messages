@@ -114,6 +114,16 @@
     <string name="sender_only">فقط فرستنده</string>
     <string name="send_on_enter">ارسال پیام با کلید اینتر</string>
     <string name="keep_conversations_archived">گفت‌و‌گو بایگانی بماند</string>
+    <string name="spam_conversations">هرزنامه</string>
+    <string name="show_spam_conversations">نمایش هرزنامه‌ها</string>
+    <string name="no_spam_conversations">هیچ پیام هرزنامه‌ای وجود ندارد</string>
+    <string name="empty_spam">حذف همه‌ی هرزنامه‌ها</string>
+    <string name="empty_spam_confirmation">پوشه‌ی هرزنامه خالی شود؟ همه‌ی پیام‌های هرزنامه برای همیشه حذف می‌شوند.</string>
+    <string name="spam_emptied_successfully">پوشه‌ی هرزنامه با موفقیت خالی شد</string>
+    <string name="not_spam">هرزنامه نیست</string>
+    <string name="not_spam_still_blocked">پیام بازگردانی شد. فرستنده یا عبارتی در آن هنوز مسدود است، بنابراین پیام‌های مشابه جدید همچنان به هرزنامه می‌روند.</string>
+    <string name="spam_mms_placeholder">پیام چندرسانه‌ای (MMS)</string>
+    <string name="move_blocked_to_spam">انتقال پیام‌های مسدودشده به هرزنامه به‌جای حذف</string>
     <string name="send_group_message">قالب پیام گروهی</string>
     <string name="group_mms">فراپیام گروهی</string>
     <string name="separate_messages">ارسال جداگانه</string>

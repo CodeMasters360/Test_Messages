@@ -151,4 +151,14 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(KEEP_CONVERSATIONS_ARCHIVED, false)
         set(keepConversationsArchived) = prefs.edit()
             .putBoolean(KEEP_CONVERSATIONS_ARCHIVED, keepConversationsArchived).apply()
+
+    /**
+     * When enabled, messages that are detected as spam (blocked number / sender name,
+     * blocked keyword, unknown number) are kept in the Spam folder, silently, instead of
+     * being discarded.
+     */
+    var moveBlockedToSpam: Boolean
+        get() = prefs.getBoolean(MOVE_BLOCKED_TO_SPAM, true)
+        set(moveBlockedToSpam) = prefs.edit()
+            .putBoolean(MOVE_BLOCKED_TO_SPAM, moveBlockedToSpam).apply()
 }

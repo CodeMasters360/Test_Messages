@@ -33,6 +33,7 @@ import org.fossify.commons.extensions.getLongValue
 import org.fossify.commons.extensions.getMyContactsCursor
 import org.fossify.commons.extensions.getStringValue
 import org.fossify.commons.extensions.hasPermission
+import org.fossify.commons.extensions.isNumberBlocked
 import org.fossify.commons.extensions.normalizeString
 import org.fossify.commons.extensions.notificationManager
 import org.fossify.commons.extensions.queryCursor
@@ -64,6 +65,7 @@ import org.fossify.messages.interfaces.ConversationsDao
 import org.fossify.messages.interfaces.DraftsDao
 import org.fossify.messages.interfaces.MessageAttachmentsDao
 import org.fossify.messages.interfaces.MessagesDao
+import org.fossify.messages.interfaces.SpamMessagesDao
 import org.fossify.messages.messaging.MessagingUtils
 import org.fossify.messages.messaging.MessagingUtils.Companion.ADDRESS_SEPARATOR
 import org.fossify.messages.messaging.SmsSender
@@ -75,6 +77,7 @@ import org.fossify.messages.models.Message
 import org.fossify.messages.models.MessageAttachment
 import org.fossify.messages.models.NamePhoto
 import org.fossify.messages.models.RecycleBinMessage
+import org.fossify.messages.models.SpamMessage
 import org.xmlpull.v1.XmlPullParserException
 import java.io.FileNotFoundException
 import kotlin.time.Duration.Companion.minutes
@@ -98,6 +101,9 @@ val Context.messagesDB: MessagesDao
 
 val Context.draftsDB: DraftsDao
     get() = getMessagesDB().DraftsDao()
+
+val Context.spamMessagesDB: SpamMessagesDao
+    get() = getMessagesDB().SpamMessagesDao()
 
 val Context.notificationHelper
     get() = NotificationHelper(this)
@@ -136,11 +142,14 @@ fun Context.getMessages(
 
     val blockStatus = HashMap<String, Boolean>()
     val blockedNumbers = getBlockedNumbers()
+    // With the Spam folder, received spam never reaches the conversations, so nothing has to
+    // be hidden. This also keeps the messages the user sends to a blocked number visible.
+    val hideBlockedSenders = !config.moveBlockedToSpam
     var messages = ArrayList<Message>()
     queryCursor(uri, projection, selection, selectionArgs, sortOrder, showErrors = true) { cursor ->
         val senderNumber = cursor.getStringValue(Sms.ADDRESS) ?: return@queryCursor
-        val isNumberBlocked = blockStatus.getOrPut(senderNumber) { isSenderBlocked(senderNumber, blockedNumbers) }
-        if (isNumberBlocked) {
+        val isNumberBlocked = blockStatus.getOrPut(senderNumber) { isNumberBlocked(senderNumber, blockedNumbers) }
+        if (isNumberBlocked && hideBlockedSenders) {
             return@queryCursor
         }
 
@@ -378,6 +387,8 @@ fun Context.getConversations(
     val conversations = ArrayList<Conversation>()
     val simpleContactHelper = SimpleContactsHelper(this)
     val blockedNumbers = getBlockedNumbers()
+    // see getMessages(): with the Spam folder the conversations of blocked senders aren't hidden
+    val hideBlockedSenders = !config.moveBlockedToSpam
     val unreadMap = getUnreadCountsByThread()
     try {
         queryCursorUnsafe(
@@ -408,12 +419,12 @@ fun Context.getConversations(
             val recipientIds =
                 rawIds.split(" ").filter { it.areDigitsOnly() }.map { it.toInt() }.toMutableList()
             val phoneNumbers = getThreadPhoneNumbers(recipientIds)
-            if (phoneNumbers.isEmpty() || phoneNumbers.any {
-                    isSenderBlocked(
+            if (phoneNumbers.isEmpty() || (hideBlockedSenders && phoneNumbers.any {
+                    isNumberBlocked(
                         it,
                         blockedNumbers
                     )
-                }) {
+                })) {
                 return@queryCursorUnsafe
             }
 
@@ -749,7 +760,7 @@ fun Context.getSuggestedContacts(
         val namePhoto = getNameAndPhotoFromPhoneNumber(senderNumber)
         var senderName = namePhoto.name
         var photoUri = namePhoto.photoUri ?: ""
-        if (isSenderBlocked(senderNumber, blockedNumbers)) {
+        if (isNumberBlocked(senderNumber, blockedNumbers)) {
             return@queryCursor
         } else if (namePhoto.name == senderNumber) {
             if (privateContacts.isNotEmpty()) {
@@ -854,6 +865,109 @@ fun Context.removeAllArchivedConversations(callback: (() -> Unit)? = null) {
                 deleteConversation(conversation.threadId)
             }
             toast(R.string.archive_emptied_successfully)
+            callback?.invoke()
+        } catch (_: Exception) {
+            toast(org.fossify.commons.R.string.unknown_error_occurred)
+        }
+    }
+}
+
+/**
+ * Keeps a received message that was detected as spam, together with its sender, in the Spam
+ * folder. Nothing is written to the telephony provider, so no conversation is created and no
+ * notification is shown.
+ */
+fun Context.saveSpamMessage(
+    address: String,
+    body: String,
+    date: Long,
+    subscriptionId: Int,
+    isMMS: Boolean = false
+) {
+    val senderName = try {
+        getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use {
+            getNameFromAddress(address, it)
+        }
+    } catch (_: Exception) {
+        address
+    }
+
+    try {
+        spamMessagesDB.insert(
+            SpamMessage(
+                id = java.util.UUID.randomUUID().mostSignificantBits,
+                address = address,
+                senderName = senderName,
+                body = body,
+                date = date,
+                subscriptionId = subscriptionId,
+                isMMS = isMMS
+            )
+        )
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+/**
+ * "Not spam": puts the message back in the inbox, in the conversation of its sender.
+ */
+fun Context.restoreSpamMessage(spamMessage: SpamMessage) {
+    val address = spamMessage.address
+    val threadId = getThreadId(address)
+    val newMessageId = insertNewSMS(
+        address = address,
+        subject = "",
+        body = spamMessage.body,
+        date = spamMessage.date,
+        read = 1,
+        threadId = threadId,
+        type = Sms.MESSAGE_TYPE_INBOX,
+        subscriptionId = spamMessage.subscriptionId
+    )
+
+    getConversations(threadId).firstOrNull()?.let { conversation ->
+        runCatching { insertOrUpdateConversation(conversation) }
+    }
+
+    val photoUri = SimpleContactsHelper(this).getPhotoUriFromPhoneNumber(address)
+    val participant = SimpleContact(
+        rawId = 0,
+        contactId = 0,
+        name = spamMessage.getSenderTitle(),
+        photoUri = photoUri,
+        phoneNumbers = arrayListOf(
+            PhoneNumber(value = address, type = 0, label = "", normalizedNumber = address)
+        ),
+        birthdays = ArrayList(),
+        anniversaries = ArrayList()
+    )
+
+    messagesDB.insertOrUpdate(
+        Message(
+            id = newMessageId,
+            body = spamMessage.body,
+            type = Sms.MESSAGE_TYPE_INBOX,
+            status = Sms.STATUS_NONE,
+            participants = arrayListOf(participant),
+            date = (spamMessage.date / 1000).toInt(),
+            read = true,
+            threadId = threadId,
+            isMMS = false,
+            attachment = null,
+            senderPhoneNumber = address,
+            senderName = spamMessage.getSenderTitle(),
+            senderPhotoUri = photoUri,
+            subscriptionId = spamMessage.subscriptionId
+        )
+    )
+}
+
+fun Context.removeAllSpamMessages(callback: (() -> Unit)? = null) {
+    ensureBackgroundThread {
+        try {
+            spamMessagesDB.deleteAll()
+            toast(R.string.spam_emptied_successfully)
             callback?.invoke()
         } catch (_: Exception) {
             toast(org.fossify.commons.R.string.unknown_error_occurred)

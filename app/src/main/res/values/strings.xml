@@ -68,24 +68,22 @@
     <string name="archive_emptied_successfully">The archive has been emptied successfully</string>
     <string name="empty_archive_confirmation">Are you sure you want to empty the archive? All archived conversations will be permanently lost.</string>
     <string name="keep_conversations_archived">Keep conversations archived</string>
+    <!-- Spam -->
+    <string name="spam_conversations">Spam</string>
+    <string name="show_spam_conversations">Show spam</string>
+    <string name="no_spam_conversations">No spam messages have been found</string>
+    <string name="empty_spam">Delete all spam</string>
+    <string name="empty_spam_confirmation">Are you sure you want to empty the Spam folder? All spam messages will be permanently lost.</string>
+    <string name="spam_emptied_successfully">The Spam folder has been emptied successfully</string>
+    <string name="not_spam">Not spam</string>
+    <string name="not_spam_still_blocked">Message restored. Its sender or a phrase in it is still blocked, so similar new messages will keep going to Spam.</string>
+    <string name="spam_mms_placeholder">Multimedia message (MMS)</string>
+    <string name="move_blocked_to_spam">Move blocked messages to Spam instead of discarding them</string>
     <!-- Recycle bin -->
     <string name="restore">Restore</string>
     <string name="restore_all_messages">Restore all messages</string>
     <string name="empty_recycle_bin_messages_confirmation">Are you sure you want to empty the Recycle Bin? The messages will be permanently lost.</string>
     <string name="skip_the_recycle_bin_messages">Skip the Recycle Bin, delete messages directly</string>
-    <!-- Spam folder -->
-    <string name="spam_folder">Spam</string>
-    <string name="show_spam_folder">Show spam folder</string>
-    <string name="no_spam_messages">The spam folder is empty. Messages from blocked numbers or sender names, blocked keywords and unknown senders (when blocked) are kept here without any notification, and are deleted automatically after 30 days.</string>
-    <string name="not_spam">Not spam</string>
-    <string name="empty_spam">Empty the spam folder</string>
-    <string name="empty_spam_confirmation">Are you sure you want to permanently delete all messages in the spam folder?</string>
-    <string name="spam_mms_placeholder">Multimedia message (blocked before it was downloaded)</string>
-    <string name="spam_unknown_sender">Unknown sender</string>
-    <string name="spam_reason_blocked_number">Blocked sender</string>
-    <string name="spam_reason_blocked_keyword">Blocked keyword</string>
-    <string name="spam_reason_unknown_sender">Unknown sender blocked</string>
-    <string name="messages_moved_out_of_spam">Moved out of spam</string>
     <!-- Confirmation dialog -->
     <string name="delete_whole_conversation_confirmation">Are you sure you want to delete all messages of this conversation?</string>
     <string name="archive_confirmation">Are you sure you want to archive %s?</string>
@@ -196,37 +194,8 @@
     <string name="faq_4_text">You need to enable \"Send group messages as MMS\" in the app settings. This will ensure that group messages are sent as proper MMS, allowing all participants to see each other\'s replies.</string>
     <string name="play">Play</string>
     <string name="pause">Pause</string>
-    <string name="blocked_messages">Blocked messages</string>
-    <string name="no_blocked_messages">No blocked messages</string>
-    <string name="edit_filter_rule">Edit filter rule</string>
-    <string name="filter_rule_name">Rule name</string>
-    <string name="filter_action">Action</string>
-    <string name="filter_sender_section">Sender</string>
-    <string name="filter_sender_help">Sender filter options</string>
-    <string name="filter_sender_mode">Sender mode</string>
-    <string name="filter_sender_hint">Sender number or name</string>
-    <string name="filter_body_section">Message body</string>
-    <string name="filter_body_help">Body filter options</string>
-    <string name="filter_body_mode">Body mode</string>
-    <string name="filter_body_hint">Keywords</string>
-    <string name="filter_match_case">Match case</string>
-    <string name="filter_rule_enabled">Enabled</string>
-    <string name="filter_both_must_match">Both sender and body must match</string>
-    <string name="manage_filter_rules">Manage filter rules</string>
-    <string name="no_filter_rules">No filter rules added yet</string>
-    <string name="add_filter_rule">Add filter rule</string>
-    <string name="filter_test_sender_hint">Test sender number</string>
-    <string name="spam">Spam</string>
-    <string name="filter_rules">Filter rules</string>
-    <string name="delete_filter_rule">Delete filter rule</string>
-    <string name="rule_saved">Filter rule saved</string>
-    <string name="test_filter">Test filter</string>
-    <string name="test_result">Test result</string>
-    <string name="match_found">Match found</string>
-    <string name="no_match">No match</string>
-	<string name="filter_test_text_hint">Test message text</string>
-    <string name="blocked_delete_all">Delete all</string>
-    <string name="filter_save">Save</string>
-    <string name="filter_delete">Delete</string>
-    <string name="test_filter_rules">Test rules</string>
+    <!--
+        Haven't found some strings? There's more at
+        https://github.com/FossifyOrg/Commons/tree/master/commons/src/main/res
+    -->
 </resources>

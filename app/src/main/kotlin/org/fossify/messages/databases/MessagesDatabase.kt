@@ -33,7 +33,7 @@ import org.fossify.messages.models.SpamMessage
         Draft::class,
         SpamMessage::class
     ],
-    version = 12
+    version = 13
 )
 @TypeConverters(Converters::class)
 abstract class MessagesDatabase : RoomDatabase() {
@@ -74,6 +74,7 @@ abstract class MessagesDatabase : RoomDatabase() {
                             .addMigrations(MIGRATION_9_10)
                             .addMigrations(MIGRATION_10_11)
                             .addMigrations(MIGRATION_11_12)
+                            .addMigrations(MIGRATION_12_13)
                             .build()
                     }
                 }
@@ -185,18 +186,31 @@ abstract class MessagesDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.apply {
                     execSQL(
-                        "CREATE TABLE IF NOT EXISTS `spam_messages` (" +
-                            "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
-                            "`address` TEXT NOT NULL, " +
-                            "`subject` TEXT NOT NULL, " +
-                            "`body` TEXT NOT NULL, " +
-                            "`date` INTEGER NOT NULL, " +
-                            "`subscription_id` INTEGER NOT NULL, " +
-                            "`reason` INTEGER NOT NULL, " +
-                            "`is_mms` INTEGER NOT NULL)"
+                        "CREATE TABLE IF NOT EXISTS `spam_conversations` " +
+                            "(`thread_id` INTEGER NOT NULL, `marked_ts` INTEGER NOT NULL, " +
+                            "PRIMARY KEY(`thread_id`))"
                     )
-                    execSQL("CREATE INDEX IF NOT EXISTS `index_spam_messages_date` ON `spam_messages` (`date`)")
-                    execSQL("CREATE INDEX IF NOT EXISTS `index_spam_messages_address` ON `spam_messages` (`address`)")
+                    execSQL(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS `index_spam_conversations_thread_id` " +
+                            "ON `spam_conversations` (`thread_id`)"
+                    )
+                }
+            }
+        }
+
+        // The first version of the Spam folder kept whole conversations. Spam is now stored
+        // message by message, so that old table is replaced.
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.apply {
+                    execSQL("DROP TABLE IF EXISTS `spam_conversations`")
+                    execSQL(
+                        "CREATE TABLE IF NOT EXISTS `spam_messages` " +
+                            "(`id` INTEGER NOT NULL, `address` TEXT NOT NULL, " +
+                            "`sender_name` TEXT NOT NULL, `body` TEXT NOT NULL, " +
+                            "`date` INTEGER NOT NULL, `subscription_id` INTEGER NOT NULL, " +
+                            "`is_mms` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+                    )
                 }
             }
         }

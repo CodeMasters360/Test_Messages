@@ -9,19 +9,20 @@ import org.fossify.messages.models.SpamMessage
 @Dao
 interface SpamMessagesDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(message: SpamMessage): Long
+    fun insert(spamMessage: SpamMessage): Long
 
-    @Query("SELECT * FROM spam_messages ORDER BY date DESC")
+    // newest first
+    @Query("SELECT * FROM spam_messages ORDER BY date DESC, id DESC")
     fun getAll(): List<SpamMessage>
+
+    @Query("SELECT * FROM spam_messages WHERE id = :id")
+    fun getById(id: Long): SpamMessage?
 
     @Query("SELECT COUNT(*) FROM spam_messages")
     fun getCount(): Int
 
-    @Query("DELETE FROM spam_messages WHERE id IN (:ids)")
-    fun deleteByIds(ids: List<Long>)
-
-    @Query("DELETE FROM spam_messages WHERE date < :timestamp")
-    fun deleteOlderThan(timestamp: Long)
+    @Query("DELETE FROM spam_messages WHERE id = :id")
+    fun delete(id: Long)
 
     @Query("DELETE FROM spam_messages")
     fun deleteAll()

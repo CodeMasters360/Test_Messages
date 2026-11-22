@@ -9,6 +9,7 @@ import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.models.PhoneNumber
 import org.fossify.commons.models.SimpleContact
+import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getConversations
 import org.fossify.messages.extensions.getNameFromAddress
 import org.fossify.messages.extensions.getNotificationBitmap
@@ -16,11 +17,11 @@ import org.fossify.messages.extensions.getThreadId
 import org.fossify.messages.extensions.insertNewSMS
 import org.fossify.messages.extensions.insertOrUpdateConversation
 import org.fossify.messages.extensions.messagesDB
-import org.fossify.messages.extensions.saveSpamMessage
 import org.fossify.messages.extensions.shouldUnarchive
 import org.fossify.messages.extensions.showReceivedMessageNotification
+import org.fossify.messages.extensions.saveSpamMessage
 import org.fossify.messages.extensions.updateConversationArchivedStatus
-import org.fossify.messages.helpers.ReceiverUtils.getSpamReason
+import org.fossify.messages.helpers.SpamFilter
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
 import org.fossify.messages.models.Message
@@ -43,25 +44,26 @@ class SmsReceiver : BroadcastReceiver() {
                 val status = parts.last().status
                 val body = buildString { parts.forEach { append(it.messageBody.orEmpty()) } }
 
-                val date = System.currentTimeMillis()
-                val subscriptionId = intent.getIntExtra("subscription", -1)
-
-                // Spam (blocked number / alphanumeric sender / keyword / unknown sender):
-                // keep it in the spam folder instead of dropping it, and don't notify.
-                val spamReason = getSpamReason(appContext, address, body)
-                if (spamReason != null) {
-                    appContext.saveSpamMessage(
-                        address = address,
-                        subject = subject,
-                        body = body,
-                        date = date,
-                        subscriptionId = subscriptionId,
-                        reason = spamReason
-                    )
+                // Only received messages are checked, never the ones the user sends.
+                // A message detected as spam (blocked number / sender name, blocked keyword,
+                // unknown number) is no longer discarded: just that message is kept in the
+                // Spam folder, with its sender, silently (no conversation, no notification).
+                if (SpamFilter.isSpam(appContext, address, body)) {
+                    if (appContext.config.moveBlockedToSpam) {
+                        appContext.saveSpamMessage(
+                            address = address,
+                            body = body,
+                            date = System.currentTimeMillis(),
+                            subscriptionId = intent.getIntExtra("subscription", -1)
+                        )
+                        refreshConversations()
+                    }
                     return@ensureBackgroundThread
                 }
 
+                val date = System.currentTimeMillis()
                 val threadId = appContext.getThreadId(address)
+                val subscriptionId = intent.getIntExtra("subscription", -1)
 
                 handleMessageSync(
                     context = appContext,
