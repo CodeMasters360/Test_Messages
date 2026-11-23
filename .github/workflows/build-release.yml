@@ -1,4 +1,4 @@
-name: Build APKs and publish Release claude
+name: Build Release Finaaal
 
 # Manual workflow: press "Run workflow" and, once the APKs are built, a brand new
 # GitHub Release is created on this repository with the signed APK files attached.
@@ -118,8 +118,9 @@ jobs:
       # ---- Build ---------------------------------------------------------------------------
       - name: Build release APKs (foss + gplay)
         run: |
-            chmod +x ./gradlew
-            ./gradlew --no-daemon --stacktrace \
+          # the executable bit is lost when files are uploaded through the browser / a zip
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --stacktrace \
             "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8" \
             "-Pkotlin.daemon.jvmargs=-Xmx2g" \
             assembleFossRelease assembleGplayRelease
