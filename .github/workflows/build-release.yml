@@ -154,7 +154,7 @@ jobs:
           (cd dist && sha256sum *.apk | tee SHA256SUMS.txt)
 
       - name: Upload APKs as workflow artifact (backup)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: apks-build-${{ github.run_number }}
           path: dist/*.apk
