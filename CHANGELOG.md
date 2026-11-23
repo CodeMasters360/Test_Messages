@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a Spam folder: received messages detected as spam (blocked numbers, blocked keywords, unknown numbers) are now kept there as separate messages, newest first and with their sender, silently and without a notification, instead of being discarded. Only the message is moved, not the whole conversation, and messages you send are never treated as spam
 - Added an option to turn the Spam folder off and discard blocked messages like before
 - Character based sender names (e.g. `Google`) can be blocked case-insensitively, `*` works as a wildcard (e.g. `AD-*`)
+- The app has its own name (Messages Shield) and application id, so it can be installed next to the official Fossify Messages
+
+## [1.10.3] - 2026-11-09
+### Changed
+- Updated translations
 
 ## [1.10.2] - 2026-10-21
 ### Changed
@@ -307,7 +312,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#829]: https://github.com/FossifyOrg/Messages/issues/829
 [#834]: https://github.com/FossifyOrg/Messages/issues/834
 
-[Unreleased]: https://github.com/FossifyOrg/Messages/compare/1.10.2...HEAD
+[Unreleased]: https://github.com/FossifyOrg/Messages/compare/1.10.3...HEAD
+[1.10.3]: https://github.com/FossifyOrg/Messages/compare/1.10.2...1.10.3
 [1.10.2]: https://github.com/FossifyOrg/Messages/compare/1.10.1...1.10.2
 [1.10.1]: https://github.com/FossifyOrg/Messages/compare/1.10.0...1.10.1
 [1.10.0]: https://github.com/FossifyOrg/Messages/compare/1.9.1...1.10.0

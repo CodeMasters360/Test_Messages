@@ -76,7 +76,7 @@
     <string name="add_person">افزودن گیرنده</string>
     <string name="add_a_blocked_keyword">افزودن کلیدواژه‌ی مسدودشده</string>
     <string name="faq_3_text">بله، می‌توانید با نگه‌داشتن دکمه‌ی ارسال و انتخاب تاریخ و ساعت دلخواه، پیام‌ها را برای ارسال در آینده زمان‌بندی کنید.</string>
-    <string name="app_launcher_name">پیام‌ها</string>
+    <string name="app_launcher_name">Messages Shield</string>
     <string name="message_not_sent_short">پیام ارسال نشد</string>
     <string name="attachment">پیوست</string>
     <string name="start_conversation">گفت‌وگویی را آغاز کنید</string>
@@ -123,6 +123,14 @@
     <string name="not_spam">هرزنامه نیست</string>
     <string name="not_spam_still_blocked">پیام بازگردانی شد. فرستنده یا عبارتی در آن هنوز مسدود است، بنابراین پیام‌های مشابه جدید همچنان به هرزنامه می‌روند.</string>
     <string name="spam_mms_placeholder">پیام چندرسانه‌ای (MMS)</string>
+    <string name="manage_blocked_senders">شماره‌ها و فرستنده‌های مسدود</string>
+    <string name="not_blocking_senders">هیچ شماره یا فرستنده‌ای را مسدود نکرده‌اید. پیام‌های دریافتی از مواردی که اینجا اضافه کنید در پوشه‌ی هرزنامه نگه داشته می‌شوند. نام فرستنده (مثل Google) هم کار می‌کند و * به‌جای هر متنی می‌نشیند.</string>
+    <string name="add_a_blocked_sender">افزودن شماره یا فرستنده‌ی مسدود</string>
+    <string name="blocked_sender_hint">شماره یا نام فرستنده</string>
+    <string name="import_system_blocked">دریافت از فهرست مسدود سیستم</string>
+    <string name="import_system_blocked_confirmation">اندروید پیامک شماره‌های فهرست مسدود خودش را بی‌صدا دور می‌اندازد، پس آن‌ها هرگز به پوشه‌ی هرزنامه نمی‌رسند. آن شماره‌ها به این فهرست منتقل شوند؟ از فهرست سیستم حذف می‌شوند و در نتیجه تماس‌هایشان دیگر مسدود نخواهد بود.</string>
+    <string name="no_system_blocked_numbers">فهرست مسدود سیستم خالی است</string>
+    <string name="import_system_blocked_done">شماره‌ها به این فهرست منتقل شدند</string>
     <string name="move_blocked_to_spam">انتقال پیام‌های مسدودشده به هرزنامه به‌جای حذف</string>
     <string name="send_group_message">قالب پیام گروهی</string>
     <string name="group_mms">فراپیام گروهی</string>

@@ -1,4 +1,4 @@
-name: Build Release Finaaal
+name: Build APKs and publish Release
 
 # Manual workflow: press "Run workflow" and, once the APKs are built, a brand new
 # GitHub Release is created on this repository with the signed APK files attached.
@@ -97,7 +97,7 @@ jobs:
                 -keystore "${GEN_DIR}/release.jks" -storetype PKCS12 \
                 -alias release -keyalg RSA -keysize 4096 -validity 36500 \
                 -storepass "${GEN_PASS}" -keypass "${GEN_PASS}" \
-                -dname "CN=Fossify Messages Custom Build, O=Personal, C=US"
+                -dname "CN=Messages Shield, O=Personal, C=US"
               echo -n "${GEN_PASS}" > "${GEN_DIR}/password.txt"
             fi
             cp "${GEN_DIR}/release.jks" "${KS_FILE}"
@@ -120,10 +120,19 @@ jobs:
         run: |
           # the executable bit is lost when files are uploaded through the browser / a zip
           chmod +x ./gradlew
-          ./gradlew --no-daemon --stacktrace \
-            "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8" \
-            "-Pkotlin.daemon.jvmargs=-Xmx2g" \
-            assembleFossRelease assembleGplayRelease
+
+          # Room exports its database schema to the same file (app/schemas/...) for every flavor.
+          # Building foss and gplay at the same time makes two KSP tasks write that file at once
+          # and corrupts it ("Unexpected JSON token ... EOF"), so the flavors are built one after
+          # the other and no tasks run in parallel.
+          rm -rf app/schemas
+
+          for flavor in Foss Gplay; do
+            ./gradlew --no-daemon --no-parallel --stacktrace \
+              "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8" \
+              "-Pkotlin.daemon.jvmargs=-Xmx2g" \
+              "assemble${flavor}Release"
+          done
 
       - name: Collect and verify APKs
         id: apks
@@ -132,7 +141,7 @@ jobs:
           mkdir -p dist
           while IFS= read -r apk; do
             flavor=$(echo "${apk}" | sed -E 's#.*/outputs/apk/([^/]+)/release/.*#\1#')
-            out="dist/FossifyMessages-${{ steps.version.outputs.name }}-spam-build${{ github.run_number }}-${flavor}.apk"
+            out="dist/MessagesShield-${{ steps.version.outputs.name }}-spam-build${{ github.run_number }}-${flavor}.apk"
             cp "${apk}" "${out}"
           done < <(find app/build/outputs/apk -type f -name '*.apk' -path '*/release/*' | sort)
 
@@ -171,14 +180,14 @@ jobs:
           set -euo pipefail
 
           {
-            echo "Fossify Messages ${VERSION_NAME} (${VERSION_CODE}) with the Spam folder feature."
+            echo "Messages Shield ${VERSION_NAME} (${VERSION_CODE}): Fossify Messages with a Spam folder."
             echo
             echo "- Commit: ${GITHUB_SHA}"
             echo "- Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
             echo "- Built on: $(date -u '+%Y-%m-%d %H:%M UTC')"
             echo
             echo "Files: \`foss\` is the regular F-Droid style build, \`gplay\` is the Google Play flavor."
-            echo "If you installed the official Fossify Messages before, uninstall it first: this build is signed with a different key."
+            echo "This app has its own application id (app.messagesshield), so it installs next to the official Fossify Messages without replacing it. Set it as the default SMS app to use it."
             echo
             echo "SHA-256:"
             echo '```'
@@ -197,7 +206,7 @@ jobs:
           gh release create "${TAG}" dist/*.apk dist/SHA256SUMS.txt \
             --repo "${GITHUB_REPOSITORY}" \
             --target "${GITHUB_SHA}" \
-            --title "Fossify Messages ${VERSION_NAME} + Spam folder (build ${GITHUB_RUN_NUMBER})" \
+            --title "Messages Shield ${VERSION_NAME} (build ${GITHUB_RUN_NUMBER})" \
             --notes-file release-notes.md \
             "${FLAGS[@]}"
 

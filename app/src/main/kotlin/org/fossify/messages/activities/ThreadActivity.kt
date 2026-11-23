@@ -1165,7 +1165,13 @@ class ThreadActivity : SimpleActivity() {
         ConfirmationDialog(this, question) {
             ensureBackgroundThread {
                 numbers.forEach {
-                    addBlockedNumber(it)
+                    if (config.moveBlockedToSpam) {
+                        // the app's own list: Android drops the texts of the numbers in its
+                        // system blocked list, so they could never reach the Spam folder
+                        config.addBlockedSender(it)
+                    } else {
+                        addBlockedNumber(it)
+                    }
                 }
                 refreshConversations()
                 finish()

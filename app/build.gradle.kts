@@ -32,7 +32,10 @@ android {
     compileSdk = project.libs.versions.app.build.compileSDKVersion.get().toInt()
 
     defaultConfig {
-        applicationId = project.property("APP_ID").toString()
+        applicationId = project.property("APPLICATION_ID").toString()
+        // Fossify Commons builds the launcher icon component names from the application id
+        // (without the ".debug" suffix), see the activity-alias entries in the manifest.
+        manifestPlaceholders["componentPrefix"] = project.property("APPLICATION_ID").toString()
         minSdk = project.libs.versions.app.build.minimumSDK.get().toInt()
         targetSdk = project.libs.versions.app.build.targetSDK.get().toInt()
         versionName = project.property("VERSION_NAME").toString()

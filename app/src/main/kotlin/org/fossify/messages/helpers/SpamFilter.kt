@@ -7,6 +7,7 @@ import org.fossify.commons.extensions.getMyContactsCursor
 import org.fossify.commons.extensions.isNumberBlocked
 import org.fossify.commons.helpers.ContactLookupResult
 import org.fossify.commons.helpers.SimpleContactsHelper
+import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.ReceiverUtils.isMessageFilteredOut
 
 /**
@@ -38,13 +39,22 @@ object SpamFilter {
     }
 
     /**
-     * Checks the sender against the blocked numbers list. In addition to what the
-     * Fossify Commons library does (digits based matching) this also supports
-     * character based sender IDs, e.g. a blocked entry `google` blocks `Google`,
-     * `GOOGLE` and so on. `*` can be used as a wildcard, e.g. `AD-*` or `*bank*`.
+     * Checks the sender against the blocked numbers and senders.
+     *
+     * 1. The app's own list (Settings > Blocked numbers and senders). Numbers have to be blocked
+     *    here for their messages to reach the Spam folder: Android drops the texts of the
+     *    numbers in its own (system) blocked list before the app can even see them.
+     * 2. The system blocked list, for what can still reach the app (e.g. MMS). In addition to
+     *    what the Fossify Commons library does (digits based matching) this also supports
+     *    character based sender IDs, e.g. a blocked entry `google` blocks `Google` and `GOOGLE`.
+     *
+     * `*` can be used as a wildcard, e.g. `AD-*` or `*bank*`.
      */
     fun isSenderBlocked(context: Context, address: String): Boolean {
         if (address.isBlank()) return false
+
+        val ownList = context.config.blockedSenders
+        if (ownList.isNotEmpty() && isSenderInOwnList(address, ownList)) return true
 
         val blockedNumbers = context.getBlockedNumbers()
         if (blockedNumbers.isEmpty()) return false
@@ -52,6 +62,40 @@ object SpamFilter {
         if (context.isNumberBlocked(address, blockedNumbers)) return true
 
         return isAlphanumericSenderBlocked(address, blockedNumbers.map { it.number })
+    }
+
+    /**
+     * Pure function (no Android dependencies) so it can be unit tested.
+     *
+     * Entries can be phone numbers (any format: `0912...`, `+98912...`, short codes), sender
+     * names (case-insensitive) or patterns with `*`.
+     */
+    fun isSenderInOwnList(address: String, entries: Collection<String>): Boolean {
+        val sender = address.trim()
+        if (sender.isEmpty()) return false
+
+        return entries.any { rawEntry ->
+            val entry = rawEntry.trim()
+            when {
+                entry.isEmpty() -> false
+                entry.contains('*') || entry.any { it.isLetter() } || sender.any { it.isLetter() } ->
+                    matchesIgnoreCase(sender, entry)
+
+                else -> isSameNumber(sender, entry)
+            }
+        }
+    }
+
+    // The same number can be written in many ways: 0912..., +98912..., 98912...
+    private fun isSameNumber(first: String, second: String): Boolean {
+        val firstDigits = first.filter { it.isDigit() }
+        val secondDigits = second.filter { it.isDigit() }
+        if (firstDigits.isEmpty() || secondDigits.isEmpty()) return false
+        if (firstDigits == secondDigits) return true
+
+        // short codes have to match exactly, longer numbers are compared by their last digits
+        return firstDigits.length >= 7 && secondDigits.length >= 7 &&
+            firstDigits.takeLast(9) == secondDigits.takeLast(9)
     }
 
     /**
