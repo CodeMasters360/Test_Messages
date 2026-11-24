@@ -62,21 +62,31 @@ jobs:
         working-directory: keyboard
         run: chmod +x gradlew
 
-      - name: Build Debug APK
+      - name: Build Optimized Foss Release APK
         working-directory: keyboard
         run: |
-          ./gradlew --no-daemon --stacktrace :app:assembleDebug
+          # فعال‌سازی کلید دیباگ برای خروجی Release تا بعد از نصب ارور ندهد
+          cat << 'EOF' > sign.gradle
+          allprojects {
+              afterEvaluate { project ->
+                  if (project.plugins.hasPlugin("com.android.application")) {
+                      project.android.buildTypes.release.signingConfig = project.android.signingConfigs.debug
+                  }
+              }
+          }
+          EOF
+          ./gradlew --no-daemon --stacktrace --init-script sign.gradle :app:assembleFossRelease
 
-      - name: Verify APKs Path
+      - name: Verify APK Path and Size
         run: |
-          echo "Generated APK files:"
-          find keyboard/app/build/outputs/apk -name "*.apk"
+          echo "APK files found:"
+          ls -lh keyboard/app/build/outputs/apk/foss/release/*.apk
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Fossify-Keyboard-Persian-PR474
-          path: keyboard/app/build/outputs/apk/**/*.apk
+          path: keyboard/app/build/outputs/apk/foss/release/*.apk
           if-no-files-found: error
           retention-days: 14
 
@@ -85,13 +95,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="pr474-persian"
-          
-          # Delete existing release and tag if present (to force replace)
+
+          mkdir -p release-apks
+          cp keyboard/app/build/outputs/apk/foss/release/*.apk release-apks/
+
           gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
-          
-          # Create fresh release and upload APK files
-          gh release create "$TAG" keyboard/app/build/outputs/apk/**/*.apk \
+
+          gh release create "$TAG" release-apks/*.apk \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "Fossify Keyboard Persian (PR #474)" \
-            --notes "Automated build from Fossify Keyboard PR #474. Build date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            --notes "Optimized Release build from PR #474. Build date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
