@@ -71,7 +71,7 @@ jobs:
       # Without them, a key is generated on the first run and kept in the Actions cache.
       - name: Restore generated signing key (fallback)
         if: ${{ env.SIGNING_KEYSTORE_BASE64 == '' }}
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ runner.temp }}/generated-keystore
           key: generated-keystore-v1-${{ github.repository }}
