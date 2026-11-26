@@ -114,6 +114,8 @@
     <string name="sender_only">فقط فرستنده</string>
     <string name="send_on_enter">ارسال پیام با کلید اینتر</string>
     <string name="keep_conversations_archived">گفت‌و‌گو بایگانی بماند</string>
+    <string name="unblock_number">رفع مسدودی شماره</string>
+    <string name="number_unblocked">مسدودی شماره برداشته شد</string>
     <string name="spam_conversations">هرزنامه</string>
     <string name="show_spam_conversations">نمایش هرزنامه‌ها</string>
     <string name="no_spam_conversations">هیچ پیام هرزنامه‌ای وجود ندارد</string>
@@ -123,14 +125,6 @@
     <string name="not_spam">هرزنامه نیست</string>
     <string name="not_spam_still_blocked">پیام بازگردانی شد. فرستنده یا عبارتی در آن هنوز مسدود است، بنابراین پیام‌های مشابه جدید همچنان به هرزنامه می‌روند.</string>
     <string name="spam_mms_placeholder">پیام چندرسانه‌ای (MMS)</string>
-    <string name="manage_blocked_senders">شماره‌ها و فرستنده‌های مسدود</string>
-    <string name="not_blocking_senders">هیچ شماره یا فرستنده‌ای را مسدود نکرده‌اید. پیام‌های دریافتی از مواردی که اینجا اضافه کنید در پوشه‌ی هرزنامه نگه داشته می‌شوند. نام فرستنده (مثل Google) هم کار می‌کند و * به‌جای هر متنی می‌نشیند.</string>
-    <string name="add_a_blocked_sender">افزودن شماره یا فرستنده‌ی مسدود</string>
-    <string name="blocked_sender_hint">شماره یا نام فرستنده</string>
-    <string name="import_system_blocked">دریافت از فهرست مسدود سیستم</string>
-    <string name="import_system_blocked_confirmation">اندروید پیامک شماره‌های فهرست مسدود خودش را بی‌صدا دور می‌اندازد، پس آن‌ها هرگز به پوشه‌ی هرزنامه نمی‌رسند. آن شماره‌ها به این فهرست منتقل شوند؟ از فهرست سیستم حذف می‌شوند و در نتیجه تماس‌هایشان دیگر مسدود نخواهد بود.</string>
-    <string name="no_system_blocked_numbers">فهرست مسدود سیستم خالی است</string>
-    <string name="import_system_blocked_done">شماره‌ها به این فهرست منتقل شدند</string>
     <string name="move_blocked_to_spam">انتقال پیام‌های مسدودشده به هرزنامه به‌جای حذف</string>
     <string name="send_group_message">قالب پیام گروهی</string>
     <string name="group_mms">فراپیام گروهی</string>

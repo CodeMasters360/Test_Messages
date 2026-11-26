@@ -60,7 +60,9 @@ import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.copyToClipboard
 import org.fossify.commons.extensions.darkenColor
+import org.fossify.commons.extensions.deleteBlockedNumber
 import org.fossify.commons.extensions.formatDate
+import org.fossify.commons.extensions.getBlockedNumbers
 import org.fossify.commons.extensions.getBottomNavigationBackgroundColor
 import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getFilenameFromPath
@@ -74,6 +76,7 @@ import org.fossify.commons.extensions.getTextSize
 import org.fossify.commons.extensions.hideKeyboard
 import org.fossify.commons.extensions.insetsController
 import org.fossify.commons.extensions.isDynamicTheme
+import org.fossify.commons.extensions.isNumberBlocked
 import org.fossify.commons.extensions.isVisible
 import org.fossify.commons.extensions.launchActivityIntent
 import org.fossify.commons.extensions.maybeShowNumberPickerDialog
@@ -211,6 +214,7 @@ class ThreadActivity : SimpleActivity() {
     private var bus: EventBus? = null
     private var conversation: Conversation? = null
     private var participants = ArrayList<SimpleContact>()
+    private var isConversationBlocked = false
     private var privateContacts = ArrayList<SimpleContact>()
     private var messages: List<Message> = emptyList()
     private val availableSIMCards = ArrayList<SIMCard>()
@@ -364,8 +368,7 @@ class ThreadActivity : SimpleActivity() {
             findItem(R.id.rename_conversation).isVisible =
                 participants.size > 1 && conversation != null && !isRecycleBin
             findItem(R.id.conversation_details).isVisible = conversation != null && !isRecycleBin
-            findItem(R.id.block_number).title =
-                getString(org.fossify.commons.R.string.block_number)
+            findItem(R.id.block_number).title = getBlockNumberTitle()
             findItem(R.id.block_number).isVisible = !isRecycleBin
             findItem(R.id.dial_number).isVisible =
                 participants.size == 1 && !isSpecialNumber() && !isRecycleBin
@@ -378,6 +381,8 @@ class ThreadActivity : SimpleActivity() {
             findItem(R.id.copy_number).isVisible =
                 participants.size == 1 && !firstPhoneNumber.isNullOrEmpty() && !isRecycleBin
         }
+
+        updateBlockedState()
     }
 
     private fun setupOptionsMenu() {
@@ -389,7 +394,7 @@ class ThreadActivity : SimpleActivity() {
 
     private fun handleMenuItemAction(menuItem: MenuItem): Boolean {
         when (menuItem.itemId) {
-            R.id.block_number -> blockNumber()
+            R.id.block_number -> toggleBlockNumber()
             R.id.delete -> askConfirmDelete()
             R.id.restore -> askConfirmRestoreAll()
             R.id.archive -> archiveConversation()
@@ -1154,6 +1159,67 @@ class ThreadActivity : SimpleActivity() {
         return userPreferredSimIdx ?: senderPreferredSimIdx ?: systemPreferredSimIdx ?: 0
     }
 
+    private fun toggleBlockNumber() {
+        if (isConversationBlocked) {
+            unblockNumber()
+        } else {
+            blockNumber()
+        }
+    }
+
+    private fun getBlockNumberTitle(): String {
+        return if (isConversationBlocked) {
+            getString(R.string.unblock_number)
+        } else {
+            getString(org.fossify.commons.R.string.block_number)
+        }
+    }
+
+    // The menu shows "Unblock number" instead of "Block number" when the number is already blocked.
+    private fun updateBlockedState() {
+        val numbers = participants.getAddresses()
+        if (numbers.isEmpty()) {
+            return
+        }
+
+        ensureBackgroundThread {
+            val blockedNumbers = getBlockedNumbers()
+            val isBlocked = blockedNumbers.isNotEmpty() &&
+                numbers.all { isNumberBlocked(it, blockedNumbers) }
+            if (isBlocked != isConversationBlocked) {
+                isConversationBlocked = isBlocked
+                runOnUiThread {
+                    binding.threadToolbar.menu.findItem(R.id.block_number)?.title = getBlockNumberTitle()
+                }
+            }
+        }
+    }
+
+    private fun unblockNumber() {
+        val numbers = participants.getAddresses()
+        ensureBackgroundThread {
+            runCatching {
+                val blockedNumbers = getBlockedNumbers()
+                numbers.forEach { number ->
+                    // the blocked entry can be written differently than the address of the
+                    // conversation (e.g. 0912... and +98912...), so match them like the block check does
+                    blockedNumbers
+                        .filter { isNumberBlocked(number, arrayListOf(it)) }
+                        .forEach { deleteBlockedNumber(it.number) }
+                }
+            }.onSuccess {
+                isConversationBlocked = false
+                refreshConversations()
+                runOnUiThread {
+                    binding.threadToolbar.menu.findItem(R.id.block_number)?.title = getBlockNumberTitle()
+                    toast(R.string.number_unblocked)
+                }
+            }.onFailure {
+                toast(org.fossify.commons.R.string.unknown_error_occurred)
+            }
+        }
+    }
+
     private fun blockNumber() {
         val numbers = participants.getAddresses()
         val numbersString = TextUtils.join(", ", numbers)
@@ -1165,13 +1231,7 @@ class ThreadActivity : SimpleActivity() {
         ConfirmationDialog(this, question) {
             ensureBackgroundThread {
                 numbers.forEach {
-                    if (config.moveBlockedToSpam) {
-                        // the app's own list: Android drops the texts of the numbers in its
-                        // system blocked list, so they could never reach the Spam folder
-                        config.addBlockedSender(it)
-                    } else {
-                        addBlockedNumber(it)
-                    }
+                    addBlockedNumber(it)
                 }
                 refreshConversations()
                 finish()

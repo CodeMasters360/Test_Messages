@@ -23,7 +23,9 @@ class SpamConversationsAdapter(
 ) : BaseConversationsAdapter(activity, recyclerView, onRefresh, itemClick) {
     override fun getActionMenuId() = R.menu.cab_spam_conversations
 
-    override fun prepareActionMode(menu: Menu) {}
+    override fun prepareActionMode(menu: Menu) {
+        // no menu items have to be hidden or changed
+    }
 
     override fun actionItemPressed(id: Int) {
         if (selectedKeys.isEmpty()) {

@@ -199,21 +199,11 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun setupManageBlockedNumbers() = binding.apply {
-        // With the Spam folder, numbers are blocked in the app's own list: Android drops the
-        // texts of the numbers in its system list, so they could never reach the Spam folder.
-        settingsManageBlockedNumbers.text = if (config.moveBlockedToSpam) {
-            getString(R.string.manage_blocked_senders)
-        } else {
+        settingsManageBlockedNumbers.text =
             getString(org.fossify.commons.R.string.manage_blocked_numbers)
-        }
         settingsManageBlockedNumbersHolder.beVisible()
         settingsManageBlockedNumbersHolder.setOnClickListener {
-            val activityClass = if (config.moveBlockedToSpam) {
-                ManageBlockedSendersActivity::class.java
-            } else {
-                ManageBlockedNumbersActivity::class.java
-            }
-            Intent(this@SettingsActivity, activityClass).apply {
+            Intent(this@SettingsActivity, ManageBlockedNumbersActivity::class.java).apply {
                 startActivity(this)
             }
         }
@@ -235,7 +225,6 @@ class SettingsActivity : SimpleActivity() {
         settingsMoveBlockedToSpamHolder.setOnClickListener {
             settingsMoveBlockedToSpam.toggle()
             config.moveBlockedToSpam = settingsMoveBlockedToSpam.isChecked
-            setupManageBlockedNumbers()
         }
     }
 

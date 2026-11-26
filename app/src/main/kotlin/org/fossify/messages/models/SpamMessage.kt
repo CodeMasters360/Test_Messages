@@ -24,4 +24,19 @@ data class SpamMessage(
 ) {
     /** The name of the sender when it's known, the phone number / sender ID otherwise. */
     fun getSenderTitle(): String = senderName.ifBlank { address }
+
+    /**
+     * Every spam message is shown as an item of its own in the Spam folder. The id of the
+     * message is used as the `threadId` of the item.
+     */
+    fun toConversation() = Conversation(
+        threadId = id,
+        snippet = body,
+        date = (date / 1000).toInt(),
+        read = true,
+        title = getSenderTitle(),
+        photoUri = "",
+        isGroupConversation = false,
+        phoneNumber = address
+    )
 }
