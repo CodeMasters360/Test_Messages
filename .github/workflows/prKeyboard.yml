@@ -1,0 +1,108 @@
+name: Build Fossify Keyboard Persian PR 474
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+    steps:
+      - name: Checkout PR 474
+        uses: actions/checkout@v4
+        with:
+          repository: FossifyOrg/Keyboard
+          ref: refs/pull/474/merge
+          path: keyboard
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Find Android SDK Manager
+        id: sdk
+        shell: bash
+        run: |
+          echo "Searching for sdkmanager..."
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" \
+            -type f -name sdkmanager 2>/dev/null | head -n 1)
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::error::sdkmanager not found in Android SDK"
+            exit 1
+          fi
+          echo "Found: $SDKMANAGER"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+
+      - name: Install Android SDK Components
+        shell: bash
+        run: |
+          echo "Accepting Android SDK licenses..."
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses || true
+          echo "Installing required SDK packages..."
+          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" \
+            "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;36.0.0"
+          echo "Android SDK setup completed!"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare Gradle
+        working-directory: keyboard
+        run: chmod +x gradlew
+
+      - name: Build Optimized Foss Release APK
+        working-directory: keyboard
+        run: |
+          # فعال‌سازی کلید دیباگ برای خروجی Release تا بعد از نصب ارور ندهد
+          cat << 'EOF' > sign.gradle
+          allprojects {
+              afterEvaluate { project ->
+                  if (project.plugins.hasPlugin("com.android.application")) {
+                      project.android.buildTypes.release.signingConfig = project.android.signingConfigs.debug
+                  }
+              }
+          }
+          EOF
+          ./gradlew --no-daemon --stacktrace --init-script sign.gradle :app:assembleFossRelease
+
+      - name: Verify APK Path and Size
+        run: |
+          echo "APK files found:"
+          ls -lh keyboard/app/build/outputs/apk/foss/release/*.apk
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Fossify-Keyboard-Persian-PR474
+          path: keyboard/app/build/outputs/apk/foss/release/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Force Release to Repository
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="pr474-persian"
+
+          mkdir -p release-apks
+          cp keyboard/app/build/outputs/apk/foss/release/*.apk release-apks/
+
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+
+          gh release create "$TAG" release-apks/*.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Fossify Keyboard Persian (PR #474)" \
+            --notes "Optimized Release build from PR #474. Build date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
