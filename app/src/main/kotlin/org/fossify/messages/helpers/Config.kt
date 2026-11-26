@@ -91,6 +91,23 @@ class Config(context: Context) : BaseConfig(context) {
         blockedKeywords = blockedKeywords.minus(keyword)
     }
 
+    /**
+     * Numbers and sender names whose messages are sent to the Spam folder. This list is
+     * intentionally separate from the system blocked numbers: Android drops the texts of the
+     * numbers in its own list before the app can see them, so those can never reach the Spam folder.
+     */
+    var blockedSenders: Set<String>
+        get() = prefs.getStringSet(BLOCKED_SENDERS, HashSet<String>())!!
+        set(blockedSenders) = prefs.edit().putStringSet(BLOCKED_SENDERS, blockedSenders).apply()
+
+    fun addBlockedSender(sender: String) {
+        blockedSenders = blockedSenders.plus(sender.trim())
+    }
+
+    fun removeBlockedSender(sender: String) {
+        blockedSenders = blockedSenders.minus(sender)
+    }
+
     var exportSms: Boolean
         get() = prefs.getBoolean(EXPORT_SMS, true)
         set(exportSms) = prefs.edit().putBoolean(EXPORT_SMS, exportSms).apply()

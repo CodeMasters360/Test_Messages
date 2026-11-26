@@ -187,7 +187,7 @@ jobs:
             echo "- Built on: $(date -u '+%Y-%m-%d %H:%M UTC')"
             echo
             echo "Files: \`foss\` is the regular F-Droid style build, \`gplay\` is the Google Play flavor."
-            echo "This app has its own application id (app.messagesshield), so it installs next to the official Fossify Messages without replacing it. Set it as the default SMS app to use it."
+            echo "This app has its own application id (org.fossify.messages.shield), so it installs next to the official Fossify Messages without replacing it. Set it as the default SMS app to use it."
             echo
             echo "SHA-256:"
             echo '```'
