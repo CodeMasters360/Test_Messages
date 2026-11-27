@@ -1,13 +1,13 @@
 package org.fossify.messages.helpers
 
 import android.content.Context
+import android.provider.BlockedNumberContract
 import org.fossify.commons.extensions.baseConfig
 import org.fossify.commons.extensions.getBlockedNumbers
 import org.fossify.commons.extensions.getMyContactsCursor
 import org.fossify.commons.extensions.isNumberBlocked
 import org.fossify.commons.helpers.ContactLookupResult
 import org.fossify.commons.helpers.SimpleContactsHelper
-import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.ReceiverUtils.isMessageFilteredOut
 
 /**
@@ -15,7 +15,7 @@ import org.fossify.messages.helpers.ReceiverUtils.isMessageFilteredOut
  *
  * A message is spam when at least one of the existing blocking rules matches:
  *  - the body contains one of the blocked keywords
- *  - the sender is in the blocked numbers list (phone numbers, patterns with `*`
+ *  - the sender is in the blocked numbers list (phone numbers, short codes, patterns with `*`
  *    and character based sender names like "Google")
  *  - "block unknown numbers" is enabled and the sender is not in the contacts
  */
@@ -39,38 +39,37 @@ object SpamFilter {
     }
 
     /**
-     * Checks the sender against the blocked numbers and senders.
+     * Checks the sender against the blocked numbers list.
      *
-     * 1. The list of numbers and senders sent to Spam (Settings > Numbers and senders sent to Spam).
-     *    This is the list that works for text messages: Android drops the texts of the numbers in its
-     *    own (system) blocked list before the app can even see them.
-     * 2. The system blocked list, for what can still reach the app (e.g. MMS, or phones that deliver
-     *    them). In addition to what the Fossify Commons library does (digits based matching) this
-     *    also supports character based sender IDs, e.g. a blocked entry `google` blocks `Google`.
-     *
-     * `*` can be used as a wildcard, e.g. `AD-*` or `*bank*`.
+     * 1. Android's own check, the one the system dialer and other messaging apps rely on.
+     * 2. The list read by the Fossify Commons library. Its comparison only looks at the last 9
+     *    digits, which misses short codes that arrive with a country code (`100020` vs
+     *    `+98100020`) and character based sender IDs, so the entries are also compared by
+     *    [isInBlockedList].
      */
     fun isSenderBlocked(context: Context, address: String): Boolean {
         if (address.isBlank()) return false
-
-        val ownList = context.config.blockedSenders
-        if (ownList.isNotEmpty() && isSenderInOwnList(address, ownList)) return true
+        if (isBlockedBySystem(context, address)) return true
 
         val blockedNumbers = context.getBlockedNumbers()
         if (blockedNumbers.isEmpty()) return false
 
         if (context.isNumberBlocked(address, blockedNumbers)) return true
 
-        return isAlphanumericSenderBlocked(address, blockedNumbers.map { it.number })
+        return isInBlockedList(address, blockedNumbers.map { it.number })
+    }
+
+    private fun isBlockedBySystem(context: Context, address: String): Boolean {
+        return runCatching { BlockedNumberContract.isBlocked(context, address) }.getOrDefault(false)
     }
 
     /**
      * Pure function (no Android dependencies) so it can be unit tested.
      *
      * Entries can be phone numbers (any format: `0912...`, `+98912...`, short codes), sender
-     * names (case-insensitive) or patterns with `*`.
+     * names (case-insensitive, e.g. `google` blocks `Google`) or patterns with `*` (`AD-*`).
      */
-    fun isSenderInOwnList(address: String, entries: Collection<String>): Boolean {
+    fun isInBlockedList(address: String, entries: Collection<String>): Boolean {
         val sender = address.trim()
         if (sender.isEmpty()) return false
 
@@ -88,27 +87,23 @@ object SpamFilter {
 
     // The same number can be written in many ways: 0912..., +98912..., 98912...
     private fun isSameNumber(first: String, second: String): Boolean {
-        val firstDigits = first.filter { it.isDigit() }
-        val secondDigits = second.filter { it.isDigit() }
+        val firstDigits = first.filter { it.isDigit() }.trimStart('0')
+        val secondDigits = second.filter { it.isDigit() }.trimStart('0')
         if (firstDigits.isEmpty() || secondDigits.isEmpty()) return false
         if (firstDigits == secondDigits) return true
 
-        // short codes have to match exactly, longer numbers are compared by their last digits
-        return firstDigits.length >= 7 && secondDigits.length >= 7 &&
-            firstDigits.takeLast(9) == secondDigits.takeLast(9)
-    }
+        val firstIsLonger = firstDigits.length > secondDigits.length
+        val longDigits = if (firstIsLonger) firstDigits else secondDigits
+        val shortDigits = if (firstIsLonger) secondDigits else firstDigits
+        val longOriginal = (if (firstIsLonger) first else second).trim()
 
-    /**
-     * Pure function (no Android dependencies) so it can be unit tested.
-     */
-    fun isAlphanumericSenderBlocked(address: String, blockedEntries: List<String>): Boolean {
-        val sender = address.trim()
-        if (sender.none { it.isLetter() }) return false
+        // the longer one has a country code in front of the other one
+        val extraDigits = longDigits.length - shortDigits.length
+        if (extraDigits !in 1..MAX_COUNTRY_CODE_LENGTH || !longDigits.endsWith(shortDigits)) return false
 
-        return blockedEntries.any { entry ->
-            val pattern = entry.trim()
-            pattern.isNotEmpty() && matchesIgnoreCase(sender, pattern)
-        }
+        // short codes (3000, 100020) only match when the country code is explicit (+98100020)
+        val hasExplicitCountryCode = longOriginal.startsWith("+") || longOriginal.startsWith("00")
+        return hasExplicitCountryCode || shortDigits.length >= MIN_LENGTH_WITHOUT_EXPLICIT_COUNTRY_CODE
     }
 
     private fun matchesIgnoreCase(sender: String, pattern: String): Boolean {
@@ -122,4 +117,7 @@ object SpamFilter {
             .toRegex(RegexOption.IGNORE_CASE)
         return regex.matches(sender)
     }
+
+    private const val MAX_COUNTRY_CODE_LENGTH = 3
+    private const val MIN_LENGTH_WITHOUT_EXPLICIT_COUNTRY_CODE = 7
 }

@@ -103,7 +103,6 @@ class SettingsActivity : SimpleActivity() {
         setupLanguage()
         setupManageBlockedNumbers()
         setupManageBlockedKeywords()
-        setupManageSpamSenders()
         setupMoveBlockedToSpam()
         setupChangeDateTimeFormat()
         setupFontSize()
@@ -205,15 +204,6 @@ class SettingsActivity : SimpleActivity() {
         settingsManageBlockedNumbersHolder.beVisible()
         settingsManageBlockedNumbersHolder.setOnClickListener {
             Intent(this@SettingsActivity, ManageBlockedNumbersActivity::class.java).apply {
-                startActivity(this)
-            }
-        }
-    }
-
-    private fun setupManageSpamSenders() = binding.apply {
-        settingsManageSpamSenders.text = getString(R.string.manage_blocked_senders)
-        settingsManageSpamSendersHolder.setOnClickListener {
-            Intent(this@SettingsActivity, ManageBlockedSendersActivity::class.java).apply {
                 startActivity(this)
             }
         }

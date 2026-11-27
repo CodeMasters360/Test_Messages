@@ -1,7 +1,6 @@
 package org.fossify.messages.activities
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.os.Bundle
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.extensions.areSystemAnimationsEnabled
@@ -60,7 +59,6 @@ class SpamConversationsActivity : SimpleActivity() {
         binding.spamToolbar.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.empty_spam -> removeAll()
-                R.id.manage_spam_senders -> startActivity(Intent(this, ManageBlockedSendersActivity::class.java))
                 else -> return@setOnMenuItemClickListener false
             }
             return@setOnMenuItemClickListener true
