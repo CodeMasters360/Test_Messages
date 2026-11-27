@@ -1,0 +1,213 @@
+name: Build APKs and publish Release
+
+# Manual workflow: press "Run workflow" and, once the APKs are built, a brand new
+# GitHub Release is created on this repository with the signed APK files attached.
+# No tag and no version bump is needed, every run creates its own release (build-<run number>).
+on:
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: "Mark the release as a pre-release"
+        type: boolean
+        required: false
+        default: false
+
+# lets the built-in GITHUB_TOKEN create tags and releases
+permissions:
+  contents: write
+
+concurrency:
+  group: build-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    name: Build and release
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # Optional repository secrets. When they are missing a signing key is generated
+      # automatically (and cached), see the "Prepare signing key" step.
+      SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+      SIGNING_STORE_PASSWORD_SECRET: ${{ secrets.SIGNING_STORE_PASSWORD }}
+      SIGNING_KEY_ALIAS_SECRET: ${{ secrets.SIGNING_KEY_ALIAS }}
+      SIGNING_KEY_PASSWORD_SECRET: ${{ secrets.SIGNING_KEY_PASSWORD }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Accept Android SDK licenses
+        run: yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Read app version
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION_NAME=$(grep -E '^VERSION_NAME=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          VERSION_CODE=$(grep -E '^VERSION_CODE=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          echo "name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+          echo "code=${VERSION_CODE}" >> "$GITHUB_OUTPUT"
+          echo "Building version ${VERSION_NAME} (${VERSION_CODE})"
+
+      # ---- Signing -------------------------------------------------------------------------
+      # Preferred: add these 4 repository secrets once (Settings > Secrets and variables >
+      # Actions), then every release is signed with the same key and can be installed as an
+      # update over the previous one:
+      #   SIGNING_KEYSTORE_BASE64  (base64 of your .jks / .keystore file)
+      #   SIGNING_STORE_PASSWORD
+      #   SIGNING_KEY_ALIAS
+      #   SIGNING_KEY_PASSWORD
+      # Without them, a key is generated on the first run and kept in the Actions cache.
+      - name: Restore generated signing key (fallback)
+        if: ${{ env.SIGNING_KEYSTORE_BASE64 == '' }}
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/generated-keystore
+          key: generated-keystore-v1-${{ github.repository }}
+
+      - name: Prepare signing key
+        run: |
+          set -euo pipefail
+          KS_FILE="${RUNNER_TEMP}/release.jks"
+
+          if [ -n "${SIGNING_KEYSTORE_BASE64}" ]; then
+            echo "Using the signing key from repository secrets"
+            echo "${SIGNING_KEYSTORE_BASE64}" | base64 -d > "${KS_FILE}"
+            STORE_PASS="${SIGNING_STORE_PASSWORD_SECRET}"
+            KEY_ALIAS="${SIGNING_KEY_ALIAS_SECRET}"
+            KEY_PASS="${SIGNING_KEY_PASSWORD_SECRET}"
+          else
+            echo "::warning::No signing secrets found, using an automatically generated key. Add the SIGNING_* secrets to keep the same signature between releases."
+            GEN_DIR="${RUNNER_TEMP}/generated-keystore"
+            mkdir -p "${GEN_DIR}"
+            if [ ! -f "${GEN_DIR}/release.jks" ]; then
+              GEN_PASS=$(openssl rand -hex 16)
+              keytool -genkeypair \
+                -keystore "${GEN_DIR}/release.jks" -storetype PKCS12 \
+                -alias release -keyalg RSA -keysize 4096 -validity 36500 \
+                -storepass "${GEN_PASS}" -keypass "${GEN_PASS}" \
+                -dname "CN=Messages Shield, O=Personal, C=US"
+              echo -n "${GEN_PASS}" > "${GEN_DIR}/password.txt"
+            fi
+            cp "${GEN_DIR}/release.jks" "${KS_FILE}"
+            STORE_PASS=$(cat "${GEN_DIR}/password.txt")
+            KEY_ALIAS="release"
+            KEY_PASS="${STORE_PASS}"
+          fi
+
+          echo "::add-mask::${STORE_PASS}"
+          echo "::add-mask::${KEY_PASS}"
+          {
+            echo "SIGNING_STORE_FILE=${KS_FILE}"
+            echo "SIGNING_STORE_PASSWORD=${STORE_PASS}"
+            echo "SIGNING_KEY_ALIAS=${KEY_ALIAS}"
+            echo "SIGNING_KEY_PASSWORD=${KEY_PASS}"
+          } >> "$GITHUB_ENV"
+
+      # ---- Build ---------------------------------------------------------------------------
+      - name: Build release APKs (foss + gplay)
+        run: |
+          # the executable bit is lost when files are uploaded through the browser / a zip
+          chmod +x ./gradlew
+
+          # Room exports its database schema to the same file (app/schemas/...) for every flavor.
+          # Building foss and gplay at the same time makes two KSP tasks write that file at once
+          # and corrupts it ("Unexpected JSON token ... EOF"), so the flavors are built one after
+          # the other and no tasks run in parallel.
+          rm -rf app/schemas
+
+          for flavor in Foss Gplay; do
+            ./gradlew --no-daemon --no-parallel --stacktrace \
+              "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8" \
+              "-Pkotlin.daemon.jvmargs=-Xmx2g" \
+              "assemble${flavor}Release"
+          done
+
+      - name: Collect and verify APKs
+        id: apks
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          while IFS= read -r apk; do
+            flavor=$(echo "${apk}" | sed -E 's#.*/outputs/apk/([^/]+)/release/.*#\1#')
+            out="dist/MessagesShield-${{ steps.version.outputs.name }}-spam-build${{ github.run_number }}-${flavor}.apk"
+            cp "${apk}" "${out}"
+          done < <(find app/build/outputs/apk -type f -name '*.apk' -path '*/release/*' | sort)
+
+          if ! ls dist/*.apk >/dev/null 2>&1; then
+            echo "::error::No APK files were produced"
+            exit 1
+          fi
+
+          APKSIGNER=$(ls -d "${ANDROID_HOME}"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1 || true)
+          if [ -n "${APKSIGNER}" ]; then
+            for f in dist/*.apk; do
+              echo "Verifying ${f}"
+              "${APKSIGNER}" verify --verbose "${f}"
+            done
+          else
+            echo "::warning::apksigner not found, skipping signature verification"
+          fi
+
+          (cd dist && sha256sum *.apk | tee SHA256SUMS.txt)
+
+      - name: Upload APKs as workflow artifact (backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: apks-build-${{ github.run_number }}
+          path: dist/*.apk
+          if-no-files-found: error
+
+      # ---- Release -------------------------------------------------------------------------
+      - name: Create GitHub Release
+        env:
+          TAG: build-${{ github.run_number }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "Messages Shield ${VERSION_NAME} (${VERSION_CODE}): Fossify Messages with a Spam folder."
+            echo
+            echo "- Commit: ${GITHUB_SHA}"
+            echo "- Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "- Built on: $(date -u '+%Y-%m-%d %H:%M UTC')"
+            echo
+            echo "Files: \`foss\` is the regular F-Droid style build, \`gplay\` is the Google Play flavor."
+            echo "This app has its own application id (org.fossify.messages.shield), so it installs next to the official Fossify Messages without replacing it. Set it as the default SMS app to use it."
+            echo
+            echo "SHA-256:"
+            echo '```'
+            cat dist/SHA256SUMS.txt
+            echo '```'
+          } > release-notes.md
+
+          # make sure re-running the same run never fails because the release/tag already exists
+          gh release delete "${TAG}" --repo "${GITHUB_REPOSITORY}" --cleanup-tag --yes 2>/dev/null || true
+
+          FLAGS=(--latest)
+          if [ "${PRERELEASE}" = "true" ]; then
+            FLAGS=(--prerelease)
+          fi
+
+          gh release create "${TAG}" dist/*.apk dist/SHA256SUMS.txt \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "Messages Shield ${VERSION_NAME} (build ${GITHUB_RUN_NUMBER})" \
+            --notes-file release-notes.md \
+            "${FLAGS[@]}"
+
+          echo "Release created: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${TAG}" | tee -a "$GITHUB_STEP_SUMMARY"

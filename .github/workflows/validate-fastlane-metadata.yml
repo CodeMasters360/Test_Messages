@@ -1,0 +1,16 @@
+name: Fastlane metadata validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "fastlane/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "fastlane/**"
+
+jobs:
+  validate:
+    if: github.repository_owner == 'FossifyOrg'
+    uses: FossifyOrg/.github/.github/workflows/validate-fastlane-metadata.yml@main

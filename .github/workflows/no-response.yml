@@ -1,0 +1,12 @@
+name: No Response
+
+on:
+  schedule:
+    - cron: "0 12 * * *" # Runs daily at noon
+  workflow_dispatch:
+
+jobs:
+  call-no-response-workflow:
+    if: github.repository_owner == 'FossifyOrg'
+    uses: FossifyOrg/.github/.github/workflows/no-response.yml@main
+    secrets: inherit
